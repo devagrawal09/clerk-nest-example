@@ -1,6 +1,6 @@
 import { Controller, Get, Request, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
-import { ClerkGuard, ClerkRequiredGuard } from './clerk.guard';
+import { ClerkGuard, ClerkRequiredGuard } from './clerk.module';
 import { RequireAuthProp, WithAuthProp } from '@clerk/clerk-sdk-node';
 
 @Controller()

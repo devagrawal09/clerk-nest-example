@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ClerkModule } from './clerk.guard';
+import { ClerkModule } from './clerk.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 // example with environment variables passed in directly

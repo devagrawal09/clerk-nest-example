@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { CLERK, ClerkService } from './clerk.guard';
+import { CLERK, ClerkService } from './clerk.module';
 
 @Injectable()
 export class AppService {
