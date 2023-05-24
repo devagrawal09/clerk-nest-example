@@ -2,18 +2,26 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
-  UnauthorizedException,
-  createParamDecorator,
   Module,
   Inject,
+  ConfigurableModuleBuilder,
+  DynamicModule,
 } from '@nestjs/common';
 import { Clerk } from '@clerk/clerk-sdk-node';
 
 export const CLERK = 'CLERK';
 export type ClerkService = ReturnType<typeof Clerk>;
 
-const CLERK_KEYS = 'CLERK_KEYS';
 type ClerkKeys = { secretKey: string; publishableKey: string };
+
+export const {
+  ConfigurableModuleClass,
+  MODULE_OPTIONS_TOKEN: CLERK_KEYS,
+  OPTIONS_TYPE,
+  ASYNC_OPTIONS_TYPE,
+} = new ConfigurableModuleBuilder<ClerkKeys>()
+  .setClassMethodName('forRoot')
+  .build();
 
 @Injectable()
 export class ClerkGuard implements CanActivate {
@@ -24,7 +32,16 @@ export class ClerkGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest();
-    const headerToken: string = req.headers.authorization.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return true;
+    }
+
+    const headerToken: string | undefined = authHeader.split(' ')[1];
+
+    if (!headerToken) {
+      return true;
+    }
 
     const res = await this.clerk.authenticateRequest({
       headerToken,
@@ -50,10 +67,19 @@ export class ClerkRequiredGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest();
-    const token: string = req.headers.authorization.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return false;
+    }
+
+    const headerToken: string | undefined = authHeader.split(' ')[1];
+
+    if (!headerToken) {
+      return false;
+    }
 
     const res = await this.clerk.authenticateRequest({
-      headerToken: token,
+      headerToken,
       apiKey: ``,
       frontendApi: ``,
       host: ``,
@@ -62,7 +88,7 @@ export class ClerkRequiredGuard implements CanActivate {
     });
 
     if (!res.isSignedIn) {
-      throw new UnauthorizedException();
+      return false;
     }
 
     req.auth = res.toAuth();
@@ -72,24 +98,28 @@ export class ClerkRequiredGuard implements CanActivate {
 }
 
 @Module({})
-export class ClerkModule {
-  static forRoot(clerkKeys: ClerkKeys) {
+export class ClerkModule extends ConfigurableModuleClass {
+  private static hydrateModule(module: DynamicModule): DynamicModule {
     return {
-      module: ClerkModule,
+      ...module,
       providers: [
-        {
-          provide: CLERK_KEYS,
-          useValue: clerkKeys,
-        },
+        ...module.providers,
         {
           provide: CLERK,
-          useValue: Clerk({
-            secretKey: clerkKeys.secretKey,
-            publishableKey: clerkKeys.publishableKey,
-          }),
+          useFactory: (clerkKeys: ClerkKeys) =>
+            Clerk({ secretKey: clerkKeys.secretKey }),
+          inject: [CLERK_KEYS],
         },
       ],
       exports: [CLERK, CLERK_KEYS],
     };
+  }
+
+  static forRoot(options: typeof OPTIONS_TYPE): DynamicModule {
+    return this.hydrateModule(super.forRoot(options));
+  }
+
+  static forRootAsync(options: typeof ASYNC_OPTIONS_TYPE): DynamicModule {
+    return this.hydrateModule(super.forRootAsync(options));
   }
 }

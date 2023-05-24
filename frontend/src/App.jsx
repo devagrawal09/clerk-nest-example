@@ -7,8 +7,10 @@ const apiUrl = "http://localhost:3000";
 function App() {
   const [message, setMessage] = useState("");
   console.log({ message });
-  function getHello() {
-    fetch(`${apiUrl}/hello`)
+  async function getHello() {
+    fetch(`${apiUrl}/hello`, {
+      headers: { Authorization: `Bearer ${await getToken()}` },
+    })
       .then((res) => res.json())
       .then((data) => setMessage(data.message));
   }

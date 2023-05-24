@@ -4,8 +4,14 @@ import { CLERK, ClerkService } from './clerk.guard';
 @Injectable()
 export class AppService {
   constructor(@Inject(CLERK) private readonly clerk: ClerkService) {}
-  getHello() {
-    return 'Hello World!';
+
+  async getHello(userId?: string) {
+    if (!userId) {
+      return 'Hello, stranger!';
+    } else {
+      const user = await this.clerk.users.getUser(userId);
+      return `Hello, ${user.firstName} ${user.lastName}!`;
+    }
   }
 
   async getWelcome(userId: string) {

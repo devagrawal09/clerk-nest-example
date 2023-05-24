@@ -1,24 +1,25 @@
 import { Controller, Get, Request, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
-import { ClerkRequiredGuard } from './clerk.guard';
-import { RequireAuthProp } from '@clerk/clerk-sdk-node';
+import { ClerkGuard, ClerkRequiredGuard } from './clerk.guard';
+import { RequireAuthProp, WithAuthProp } from '@clerk/clerk-sdk-node';
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get('/hello')
-  async getHello() {
-    const message = this.appService.getHello();
-
+  @UseGuards(ClerkGuard)
+  async getHello(@Request() req: WithAuthProp<Request>) {
+    const userId: string | null = req.auth.userId;
+    const message = await this.appService.getHello(userId);
     return { message };
   }
 
   @Get('/welcome')
   @UseGuards(ClerkRequiredGuard)
   async getWelcome(@Request() req: RequireAuthProp<Request>) {
-    const message = await this.appService.getWelcome(req.auth.userId);
-
+    const userId = req.auth.userId;
+    const message = await this.appService.getWelcome(userId);
     return { message };
   }
 }
