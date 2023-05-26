@@ -1,3 +1,5 @@
+// full implementation with configurable module and injectable service
+
 import {
   Injectable,
   CanActivate,
@@ -32,16 +34,8 @@ export class ClerkGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest();
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return true;
-    }
-
-    const headerToken: string | undefined = authHeader.split(' ')[1];
-
-    if (!headerToken) {
-      return true;
-    }
+    const authHeader = req.headers.authorization || ``;
+    const headerToken = authHeader.split(' ')[1];
 
     const res = await this.clerk.authenticateRequest({
       headerToken,
@@ -52,7 +46,11 @@ export class ClerkGuard implements CanActivate {
       publishableKey: this.clerkKeys.publishableKey,
     });
 
-    req.auth = res.toAuth();
+    const auth = res.toAuth();
+    req.auth = {
+      ...auth,
+      claims: auth.sessionClaims,
+    };
 
     return true;
   }
@@ -67,16 +65,8 @@ export class ClerkRequiredGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest();
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return false;
-    }
-
-    const headerToken: string | undefined = authHeader.split(' ')[1];
-
-    if (!headerToken) {
-      return false;
-    }
+    const authHeader = req.headers.authorization || ``;
+    const headerToken = authHeader.split(' ')[1];
 
     const res = await this.clerk.authenticateRequest({
       headerToken,
@@ -87,11 +77,13 @@ export class ClerkRequiredGuard implements CanActivate {
       publishableKey: this.clerkKeys.publishableKey,
     });
 
-    if (!res.isSignedIn) {
-      return false;
-    }
+    if (!res.isSignedIn) return false;
 
-    req.auth = res.toAuth();
+    const auth = res.toAuth();
+    req.auth = {
+      ...auth,
+      claims: auth.sessionClaims,
+    };
 
     return true;
   }

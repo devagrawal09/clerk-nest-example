@@ -10,7 +10,7 @@ export class AppController {
   @Get('/hello')
   @UseGuards(ClerkGuard)
   async getHello(@Request() req: WithAuthProp<Request>) {
-    const userId: string | null = req.auth.userId;
+    const userId = req.auth.userId;
     const message = await this.appService.getHello(userId);
     return { message };
   }
