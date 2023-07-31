@@ -27,24 +27,14 @@ export const {
 
 @Injectable()
 export class ClerkGuard implements CanActivate {
-  constructor(
-    @Inject(CLERK) private readonly clerk: ClerkService,
-    @Inject(CLERK_KEYS) private readonly clerkKeys: ClerkKeys,
-  ) {}
+  constructor(@Inject(CLERK) private readonly clerk: ClerkService) {}
 
   async canActivate(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest();
     const authHeader = req.headers.authorization || ``;
     const headerToken = authHeader.split(' ')[1];
 
-    const res = await this.clerk.authenticateRequest({
-      headerToken,
-      apiKey: ``,
-      frontendApi: ``,
-      host: ``,
-      secretKey: this.clerkKeys.secretKey,
-      publishableKey: this.clerkKeys.publishableKey,
-    });
+    const res = await this.clerk.authenticateRequest({ headerToken });
 
     const auth = res.toAuth();
     req.auth = {
@@ -58,28 +48,19 @@ export class ClerkGuard implements CanActivate {
 
 @Injectable()
 export class ClerkRequiredGuard implements CanActivate {
-  constructor(
-    @Inject(CLERK) private readonly clerk: ClerkService,
-    @Inject(CLERK_KEYS) private readonly clerkKeys: ClerkKeys,
-  ) {}
+  constructor(@Inject(CLERK) private readonly clerk: ClerkService) {}
 
   async canActivate(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest();
     const authHeader = req.headers.authorization || ``;
     const headerToken = authHeader.split(' ')[1];
 
-    const res = await this.clerk.authenticateRequest({
-      headerToken,
-      apiKey: ``,
-      frontendApi: ``,
-      host: ``,
-      secretKey: this.clerkKeys.secretKey,
-      publishableKey: this.clerkKeys.publishableKey,
-    });
+    const res = await this.clerk.authenticateRequest({ headerToken });
 
     if (!res.isSignedIn) return false;
 
     const auth = res.toAuth();
+
     req.auth = {
       ...auth,
       claims: auth.sessionClaims,
@@ -103,7 +84,7 @@ export class ClerkModule extends ConfigurableModuleClass {
           inject: [CLERK_KEYS],
         },
       ],
-      exports: [CLERK, CLERK_KEYS],
+      exports: [CLERK],
     };
   }
 

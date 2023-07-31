@@ -13,14 +13,7 @@ export class ClerkGuard implements CanActivate {
     const authHeader = req.headers.authorization || ``;
     const headerToken = authHeader.split(' ')[1];
 
-    const res = await clerkClient.authenticateRequest({
-      headerToken,
-      apiKey: ``,
-      frontendApi: ``,
-      host: ``,
-      secretKey: process.env.CLERK_SECRET_KEY,
-      publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
-    });
+    const res = await clerkClient.authenticateRequest({ headerToken });
 
     req.auth = res.toAuth();
 
